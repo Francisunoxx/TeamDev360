@@ -1,0 +1,124 @@
+﻿@page "/search"
+@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@using System.Linq
+@using TeamDev360.MediatR.Notification
+@using TeamDev360.MediatR.Request
+@using TeamDev360.Models
+@using TeamDev360.Service
+@using global::MediatR
+@rendermode InteractiveServer
+@attribute [StreamRendering]
+
+<PageTitle>Search</PageTitle>
+
+<div class="col-xs-12 w-100 h-100">
+    <EditForm EditContext="EditContext" OnSubmit="Submit" FormName="SearchForm">
+        <div class="col-xs-5">
+            <InputText @bind-Value="Model.Value" placeholder="Search for Attractions" class="ml-1 w-25" />
+            <Button Color="ButtonColor.Primary" Type="ButtonType.Submit">Search</Button>
+        </div>
+        @if (DataList != null)
+        {
+            <div class="col-xs-5">
+                <ul style="width: 50%; list-style-type: none; padding-left: 0;">
+                    @foreach (var evt in DataList)
+                    {
+                        <li class="h-50 d-flex mb-1" style="cursor: pointer; background: white; width: 50%;" @onclick="() => SelectEvent(evt)">
+                            <div class="col-xs-12" style="width: 30%;">
+                                @if (evt.Images != null && evt.Images.Any())
+                                {
+                                    <img src="@evt.Images.Where(_ => _.Ratio == "3_2" || _.Url.EndsWith("ARTIST_PAGE_3_2.jpg")).FirstOrDefault()?.Url"
+                                         alt="@evt.Name"
+                                         class="rounded mx-auto d-block"
+                                         style="max-width: 150px; height: auto; margin: 0;" />
+                                }
+                                else
+                                {
+                                    <img src="placeholder.jpg"
+                                         alt="No image available"
+                                         class="rounded mx-auto d-block"
+                                         style="max-width: 80px; height: auto;" />
+                                }
+                            </div>
+                            <div class="col-xs-12 d-flex align-items-center justify-content-start" style="width: 70%; margin-left: 5%;">
+                                <span style="font-weight: bold; font-size: 23px;">@evt.Name</span>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+        @if (DataList != null && DataList.Count <= 0 && IsSubmitted)
+        {
+            <div class="col-xs-5">
+                <div style="margin-top: 1%; width: 29%; background: white; display: flex; align-items: center; flex-direction: column;">
+                    <img src="../../../assets/sadface_icon.png"
+                         class="rounded mx-auto d-block"
+                         style="max-width: 80px; height: auto; margin: 0;" />
+                    <h6 style="color: #186CA8">No Results Found</h6>
+                </div>
+            </div>
+        }
+        @if (DataList != null && DataList.Count > 0)
+        {
+            <Button Color="ButtonColor.Primary" Type="ButtonType.Button" @onclick="() => NavigateToDetails()">Select</Button>
+        }
+    </EditForm>
+</div>
+
+@code {
+    [SupplyParameterFromForm] private Query Model { get; set; } = new Query();
+    [Inject] private NavigationManager Navigation { get; set; }
+    [Inject] private IMediator Mediator { get; set; }
+
+    private bool IsSubmitted = false;
+    private EditContext EditContext;
+    private List<Event> DataList = null;
+    private Event SelectedEvent = new Event();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Notify the MediaTr to update the state of the component,  and set the visibility of the header and background color
+        await Mediator.Publish(new ComponentStateUpdatedNotification { IsVisible = true, BackgroundColor = "#EDF5F9" });
+        // Tracks the Metadata of the binded component
+        EditContext = new(Model);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Send a request to the MediatR to get the state of the component
+            DataList = await Mediator.Send(new QueryStateRequest() { Value = Model.Value });
+            StateHasChanged();
+        }
+    }
+
+    private async Task Submit()
+    {
+        if (EditContext != null && EditContext.Validate())
+        {
+            // Clear previous results
+            DataList.Clear();
+            // Send a request to the MediatR to get the state of the component
+            DataList = await Mediator.Send(new QueryStateRequest() { Value = Model.Value });
+            IsSubmitted = true;
+            StateHasChanged(); // Ensure the UI is updated
+        }
+    }
+
+    private void SelectEvent(Event evt)
+    {
+        SelectedEvent = evt; // Assign the clicked event to SelectedEvent
+        StateHasChanged(); // Notify the UI to update if necessary
+    }
+
+    private async Task NavigateToDetails()
+    {
+        if (SelectedEvent != null)
+        {
+            Navigation.NavigateTo($"details/{SelectedEvent.Id}");
+        }
+    }
+}

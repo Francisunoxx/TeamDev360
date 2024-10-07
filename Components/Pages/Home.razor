@@ -1,0 +1,38 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using TeamDev360.MediatR.Notification
+@using global::MediatR
+
+<PageTitle>Home</PageTitle>
+
+<div class="col-xs-12 d-flex justify-content-center">
+    <Image src="../../../assets/ET Logo stacked.png" alt="TeamDev360" class="img-fluid" />
+</div>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; }
+    [Inject] private IMediator Mediator { get; set; }
+    private bool firstRender = true;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize the colors and visibility of header
+        await Mediator.Publish(new ComponentStateUpdatedNotification { IsVisible = false, BackgroundColor = "#182F40" });
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(3000);
+            await SendRequest();
+            Navigation.NavigateTo("search");
+        }
+    }
+
+    private async Task SendRequest()
+    {
+        // Publish the notification to update the state
+        await Mediator.Publish(new ComponentStateUpdatedNotification { IsVisible = true, BackgroundColor = "#EDF5F9" });
+    }
+}

@@ -1,0 +1,29 @@
+﻿@using TeamDev360.Models
+@inherits LayoutComponentBase
+@inject ComponentState componentState
+
+<div class="page" style="background: @(componentState.BackgroundColor)">
+    <main>
+        @if (componentState.IsVisible)
+        {
+            <div class="top-row px-4 h-15 d-flex justify-content-start" style="background: @(componentState.HeaderBackgroundColor)">
+                <img src="../../../assets/ET Logo horizontal.png" alt="TeamDev360" class="text-start" />
+            </div>
+        }
+        <article class="d-flex justify-content-center align-items-center px-4 h-100">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        componentState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        componentState.OnChange -= StateHasChanged;
+    }
+}
